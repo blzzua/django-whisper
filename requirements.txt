@@ -1,0 +1,17 @@
+Django==5.2.5
+gunicorn
+django-admin-list-filter-dropdown
+python-dotenv
+Pillow
+django-bootstrap5
+django-extensions
+celery[redis]
+django_redis
+django-celery-beat
+django-celery-results
+requests
+psycopg2-binary==2.9.9
+redis
+Pillow
+python-magic
+django-widget-tweaks

@@ -1,0 +1,106 @@
+<!-- templates/transcription/transcription_detail.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ media_file.original_filename }} - Whisper{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-file-text"></i> {{ media_file.original_filename }}
+                    </h4>
+                    <a href="{% url 'my_transcriptions' %}" class="btn btn-light btn-sm">
+                        <i class="bi bi-arrow-left"></i> Назад до списку
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-info-circle"></i> Інформація про файл</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Тип:</strong> {{ media_file.get_file_type_display }}</li>
+                            <li><strong>Завантажено:</strong> {{ media_file.upload_date|date:"d.m.Y H:i" }}</li>
+                            <li><strong>Мова:</strong> {{ media_file.get_language_display }}</li>
+                            <li><strong>Статус:</strong> 
+                                <span class="badge status-{{ media_file.status }} status-badge">
+                                    {{ media_file.get_status_display }}
+                                </span>
+                            </li>
+                            {% if media_file.noise_cancellation %}
+                                <li><i class="bi bi-check-circle text-success"></i> Зменшення шуму</li>
+                            {% endif %}
+                            {% if media_file.diarisation %}
+                                <li><i class="bi bi-check-circle text-success"></i> Розділення мовців</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-share"></i> Поділитися</h6>
+                        {% if media_file.is_shared %}
+                            <div class="alert alert-info">
+                                <i class="bi bi-link-45deg"></i> Цей файл доступний за посиланням:
+                                <br>
+                                <a href="{% url 'shared_transcription' media_file.shared_url %}" 
+                                   target="_blank" class="btn btn-sm btn-outline-primary mt-2">
+                                    Відкрити посилання <i class="bi bi-box-arrow-up-right"></i>
+                                </a>
+                                <button class="btn btn-sm btn-outline-secondary mt-2 ms-2"
+                                        hx-post="{% url 'toggle_share' media_file.id %}"
+                                        hx-target="#share-status"
+                                        hx-swap="outerHTML">
+                                    Приховати посилання
+                                </button>
+                            </div>
+                        {% else %}
+                            <button class="btn btn-outline-primary"
+                                    hx-post="{% url 'toggle_share' media_file.id %}"
+                                    hx-target="#share-status"
+                                    hx-swap="outerHTML">
+                                <i class="bi bi-share"></i> Створити спільне посилання
+                            </button>
+                        {% endif %}
+                        <div id="share-status"></div>
+                    </div>
+                </div>
+                
+                <h6><i class="bi bi-chat-text"></i> Розпізнаний текст</h6>
+                <div class="transcription-text">
+                    {{ media_file.recognized_text|linebreaks }}
+                </div>
+                
+                <div class="text-end mt-3">
+                    <button type="button" class="btn btn-primary" onclick="copyToClipboard()">
+                        <i class="bi bi-clipboard"></i> Копіювати текст
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copyToClipboard() {
+    const text = document.querySelector('.transcription-text').innerText;
+    navigator.clipboard.writeText(text).then(function() {
+        // Show success message
+        const btn = event.target;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check"></i> Скопійовано!';
+        btn.classList.add('btn-success');
+        btn.classList.remove('btn-primary');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.add('btn-primary');
+            btn.classList.remove('btn-success');
+        }, 2000);
+    });
+}
+</script>
+{% endblock %}

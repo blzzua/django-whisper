@@ -1,0 +1,140 @@
+<!-- templates/transcription/partials/transcription_table.html -->
+{% load widget_tweaks %}
+
+<div id="transcription-table">
+    {% if media_files %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th><i class="bi bi-file-earmark"></i> Файл</th>
+                        <th><i class="bi bi-calendar"></i> Дата</th>
+                        <th><i class="bi bi-badge-hd"></i> Тип</th>
+                        <th><i class="bi bi-gear"></i> Налаштування</th>
+                        <th><i class="bi bi-check-circle"></i> Статус</th>
+                        <th><i class="bi bi-share"></i> Поділитися</th>
+                        <th><i class="bi bi-three-dots"></i> Дії</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for file in media_files %}
+                    <tr data-status="{{ file.status }}" data-file-id="{{ file.id }}">
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-{% if file.file_type == 'video' %}camera-video{% else %}music-note{% endif %} me-2 text-primary"></i>
+                                <div>
+                                    <strong>{{ file.original_filename|truncatechars:30 }}</strong>
+                                    <br><small class="text-muted">{{ file.file.size|filesizeformat }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <small>{{ file.upload_date|date:"d.m.Y" }}</small><br>
+                            <small class="text-muted">{{ file.upload_date|time:"H:i" }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">
+                                {% if file.file_type == 'video' %}
+                                    <i class="bi bi-camera-video"></i> Відео
+                                {% else %}
+                                    <i class="bi bi-music-note"></i> Аудіо
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <small>
+                                🌐 {{ file.get_language_display }}<br>
+                                {% if file.noise_cancellation %}🔇 Зменшення шуму<br>{% endif %}
+                                {% if file.diarisation %}👥 Розділення мовців{% endif %}
+                            </small>
+                        </td>
+                        <td>
+                            {% if file.status == 'pending' %}
+                                <span class="badge status-pending status-badge">
+                                    <i class="bi bi-clock"></i> В очікуванні
+                                </span>
+                            {% elif file.status == 'processing' %}
+                                <span class="badge status-processing status-badge">
+                                    <i class="bi bi-arrow-repeat"></i> В обробці
+                                </span>
+                            {% elif file.status == 'completed' %}
+                                <span class="badge status-completed status-badge">
+                                    <i class="bi bi-check-circle"></i> Готово
+                                </span>
+                            {% else %}
+                                <span class="badge status-failed status-badge">
+                                    <i class="bi bi-x-circle"></i> Помилка
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if file.status == 'completed' %}
+                                <button class="btn btn-sm btn-outline-secondary"
+                                        hx-post="{% url 'toggle_share' file.id %}"
+                                        hx-target="#share-{{ file.id }}"
+                                        hx-swap="outerHTML">
+                                    <span id="share-{{ file.id }}">
+                                        {% if file.is_shared %}
+                                            <i class="bi bi-link-45deg"></i> Спільний
+                                        {% else %}
+                                            <i class="bi bi-share"></i> Поділитися
+                                        {% endif %}
+                                    </span>
+                                </button>
+                                {% if file.is_shared %}
+                                    <small class="d-block text-muted">
+                                        <a href="{% url 'shared_transcription' file.shared_url %}" target="_blank">
+                                            Посилання <i class="bi bi-box-arrow-up-right"></i>
+                                        </a>
+                                    </small>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if file.status == 'completed' %}
+                                <a href="{% url 'transcription_detail' file.id %}" 
+                                   class="btn btn-sm btn-primary"
+                                   hx-get="{% url 'transcription_detail' file.id %}"
+                                   hx-target="#modal-content"
+                                   hx-trigger="click"
+                                   data-bs-toggle="modal"
+                                   data-bs-target="#transcriptionModal">
+                                    <i class="bi bi-eye"></i> Переглянути
+                                </a>
+                            {% elif file.status == 'processing' %}
+                                <button class="btn btn-sm btn-secondary" disabled>
+                                    <div class="spinner-border spinner-border-sm" role="status">
+                                        <span class="visually-hidden">Обробка...</span>
+                                    </div>
+                                </button>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-inbox display-1 text-muted"></i>
+            <h5 class="mt-3">Файлів поки немає</h5>
+            <p class="text-muted">Завантажте ваш перший медіафайл для розпізнавання тексту</p>
+            <a href="{% url 'upload' %}" class="btn btn-primary">
+                <i class="bi bi-upload"></i> Завантажити файл
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Modal for transcription details -->
+<div class="modal fade" id="transcriptionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="modal-content">
+            <!-- Content will be loaded here -->
+        </div>
+    </div>
+</div>

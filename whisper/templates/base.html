@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Whisper - Розпізнавання тексту{% endblock %}</title>
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <style>
+        .upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 3rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+        
+        .upload-area:hover {
+            border-color: #0d6efd;
+            background: #e7f3ff;
+        }
+        
+        .upload-area.dragover {
+            border-color: #198754;
+            background: #e8f5e8;
+            transform: scale(1.02);
+        }
+        
+        .progress-container {
+            display: none;
+        }
+        
+        .file-info {
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .status-badge {
+            font-size: 0.875em;
+            padding: 0.5rem 0.75rem;
+        }
+        
+        .status-pending { background-color: #ffc107; }
+        .status-processing { background-color: #0dcaf0; }
+        .status-completed { background-color: #198754; }
+        .status-failed { background-color: #dc3545; }
+        
+        .transcription-text {
+            background: #f8f9fa;
+            border-left: 4px solid #0d6efd;
+            padding: 1.5rem;
+            border-radius: 0 8px 8px 0;
+            font-family: 'Georgia', serif;
+            line-height: 1.6;
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        
+        .footer {
+            background: #343a40;
+            color: white;
+            padding: 2rem 0;
+            margin-top: auto;
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        main {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'upload' %}">
+                <i class="bi bi-mic"></i> Whisper
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'upload' %}">
+                                <i class="bi bi-upload"></i> Завантажити
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'my_transcriptions' %}">
+                                <i class="bi bi-list-ul"></i> Мої розшифрування
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+                
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-person"></i> {{ user.username }}
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'logout' %}">
+                                    <i class="bi bi-box-arrow-right"></i> Вийти
+                                </a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'login' %}">
+                                <i class="bi bi-box-arrow-in-right"></i> Увійти
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'register' %}">
+                                <i class="bi bi-person-plus"></i> Реєстрація
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="container mt-3">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main class="container my-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container text-center">
+            <p>&copy; 2025 Whisper. Система розпізнавання тексту з медіафайлів.</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script>
+        // Drag & Drop functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.querySelector('.upload-area');
+            const fileInput = document.querySelector('#file-upload');
+            
+            if (uploadArea && fileInput) {
+                // Prevent default drag behaviors
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    uploadArea.addEventListener(eventName, preventDefaults, false);
+                    document.body.addEventListener(eventName, preventDefaults, false);
+                });
+                
+                // Highlight drop area when item is dragged over it
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    uploadArea.addEventListener(eventName, highlight, false);
+                });
+                
+                ['dragleave', 'drop'].forEach(eventName => {
+                    uploadArea.addEventListener(eventName, unhighlight, false);
+                });
+                
+                // Handle dropped files
+                uploadArea.addEventListener('drop', handleDrop, false);
+                
+                // Handle click to select file
+                uploadArea.addEventListener('click', () => fileInput.click());
+                
+                // Handle file selection
+                fileInput.addEventListener('change', handleFiles);
+            }
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            function highlight(e) {
+                uploadArea.classList.add('dragover');
+            }
+            
+            function unhighlight(e) {
+                uploadArea.classList.remove('dragover');
+            }
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                fileInput.files = files;
+                handleFiles();
+            }
+            
+            function handleFiles() {
+                const files = fileInput.files;
+                if (files.length > 0) {
+                    const file = files[0];
+                    showFileInfo(file);
+                }
+            }
+            
+            function showFileInfo(file) {
+                const fileInfo = document.createElement('div');
+                fileInfo.className = 'file-info';
+                fileInfo.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-file-earmark-music me-2"></i>
+                        <div>
+                            <strong>${file.name}</strong><br>
+                            <small class="text-muted">${(file.size / 1024 / 1024).toFixed(2)} МБ</small>
+                        </div>
+                    </div>
+                `;
+                
+                // Remove existing file info
+                const existingInfo = uploadArea.parentNode.querySelector('.file-info');
+                if (existingInfo) {
+                    existingInfo.remove();
+                }
+                
+                uploadArea.parentNode.insertBefore(fileInfo, uploadArea.nextSibling);
+            }
+        });
+        
+        // Auto-refresh status for processing files
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusElements = document.querySelectorAll('[data-status="processing"]');
+            
+            statusElements.forEach(element => {
+                const fileId = element.getAttribute('data-file-id');
+                if (fileId) {
+                    const interval = setInterval(() => {
+                        fetch(`/transcription/${fileId}/status/`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.status !== 'processing') {
+                                    clearInterval(interval);
+                                    // Trigger HTMX refresh
+                                    htmx.trigger('#transcription-table', 'refresh');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error checking status:', error);
+                                clearInterval(interval);
+                            });
+                    }, 3000); // Check every 3 seconds
+                }
+            });
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+

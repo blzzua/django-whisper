@@ -1,0 +1,118 @@
+<!-- templates/transcription/upload.html -->
+<!DOCTYPE html>
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Завантажити файл - Whisper{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-upload"></i> Завантажити медіафайл
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" 
+                      hx-post="{% url 'upload' %}" 
+                      hx-encoding="multipart/form-data"
+                      hx-target="#upload-result"
+                      hx-indicator="#loading-indicator">
+                    {% csrf_token %}
+                    
+                    <div class="upload-area mb-4">
+                        <i class="bi bi-cloud-upload display-1 text-muted mb-3"></i>
+                        <h5>Перетягніть файл сюди або натисніть для вибору</h5>
+                        <p class="text-muted">
+                            Підтримувані формати: MP3, WAV, OGG, AAC, FLAC, M4A, MP4, AVI, MOV, WMV, FLV, WEBM
+                        </p>
+                        <p class="text-muted">Максимальний розмір: 500 МБ</p>
+                    </div>
+                    
+                    {{ form.file }}
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group mb-3">
+                                <label for="{{ form.language.id_for_label }}" class="form-label">
+                                    <i class="bi bi-globe"></i> {{ form.language.label }}
+                                </label>
+                                {{ form.language|add_class:"form-select" }}
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Додаткові опції</label>
+                            <div class="form-check">
+                                {{ form.noise_cancellation|add_class:"form-check-input" }}
+                                <label for="{{ form.noise_cancellation.id_for_label }}" class="form-check-label">
+                                    <i class="bi bi-volume-off"></i> {{ form.noise_cancellation.label }}
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                {{ form.diarisation|add_class:"form-check-input" }}
+                                <label for="{{ form.diarisation.id_for_label }}" class="form-check-label">
+                                    <i class="bi bi-people"></i> {{ form.diarisation.label }}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-container mb-3">
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-upload"></i> Завантажити та обробити
+                        </button>
+                    </div>
+                    
+                    <div id="loading-indicator" class="htmx-indicator text-center mt-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Завантаження...</span>
+                        </div>
+                        <p class="mt-2">Завантаження файлу...</p>
+                    </div>
+                </form>
+                
+                <div id="upload-result"></div>
+            </div>
+        </div>
+        
+        {% if user.media_files.exists %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history"></i> Останні файли
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for file in user.media_files.all|slice:":3" %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ file.original_filename }}</strong>
+                            <br><small class="text-muted">{{ file.upload_date|date:"d.m.Y H:i" }}</small>
+                        </div>
+                        <span class="badge status-{{ file.status }} status-badge">
+                            {{ file.get_status_display }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{% url 'my_transcriptions' %}" class="btn btn-outline-primary">
+                        Переглянути всі <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

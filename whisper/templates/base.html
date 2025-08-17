@@ -121,9 +121,13 @@
                                 <i class="bi bi-person"></i> {{ user.username }}
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'logout' %}">
-                                    <i class="bi bi-box-arrow-right"></i> Вийти
-                                </a></li>
+                                <li><form method="post" action="{% url 'logout' %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-link dropdown-item">
+                                            <i class="bi bi-box-arrow-right"></i> Вийти
+                                        </button>
+                                    </form>
+                                    </li>
                             </ul>
                         </li>
                     {% else %}

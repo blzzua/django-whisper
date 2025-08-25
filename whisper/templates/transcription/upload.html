@@ -19,7 +19,8 @@
                       hx-post="{% url 'upload' %}" 
                       hx-encoding="multipart/form-data"
                       hx-target="#upload-result"
-                      hx-indicator="#loading-indicator">
+                      hx-indicator="#loading-indicator"
+                      hx-on::after-swap="handleUploadResult(event)">
                     {% csrf_token %}
                     
                     <div class="upload-area mb-4">
@@ -79,7 +80,8 @@
                         <p class="mt-2">Завантаження файлу...</p>
                     </div>
                 </form>
-                
+
+                <div id="alert-container"></div>
                 <div id="upload-result"></div>
             </div>
         </div>

@@ -21,8 +21,9 @@ class MediaFile(models.Model):
     
     hash_id = models.CharField(max_length=32, unique=True, null=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='media_files')
-    file = models.FileField(upload_to='uploads/%Y/%m/%d/')
+    file = models.FileField(upload_to='uploads/%Y-%m/')
     original_filename = models.CharField(max_length=255)
+    original_filesize = models.IntegerField(null=True, default=None)
     upload_date = models.DateTimeField(default=timezone.now)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     recognized_text = models.TextField(null=True, blank=True)
@@ -47,8 +48,10 @@ class MediaFile(models.Model):
         if self.is_shared and not self.shared_url:
             # Генеруємо короткий Base62 URL
             hash_int = int(self.hash_id[:8], 16)
-            self.shared_url = base64.encode(hash_int)[:8]
-        
+            self.shared_url = self.hash_id
+        if self.original_filesize is None:
+            original_filesize = self.file.size
+
         super().save(*args, **kwargs)
     
     def get_file_extension(self):

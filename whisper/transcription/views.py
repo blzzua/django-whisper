@@ -10,7 +10,7 @@ from django.utils import timezone
 from .models import MediaFile
 from .forms import MediaFileUploadForm
 from .tasks import process_media_file_task
-
+import logging
 
 def register_view(request):
     if request.method == 'POST':
@@ -43,8 +43,10 @@ def upload_view(request):
             media_file.save()
             
             # Запускаємо фонову обробку
+            logging.info('process_media_file_task.delay(media_file.id)')
             process_media_file_task.delay(media_file.id)
-            
+            logging.info('Файл завантажено і відправлено на обробку!')
+
             messages.success(request, 'Файл завантажено і відправлено на обробку!')
             
             if request.headers.get('HX-Request'):

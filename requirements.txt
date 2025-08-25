@@ -15,3 +15,9 @@ redis
 Pillow
 python-magic
 django-widget-tweaks
+openai-whisper>=20231117
+torch @ https://download.pytorch.org/whl/cpu/torch-2.8.0%2Bcpu-cp310-cp310-manylinux_2_28_x86_64.whl#sha256=16d75fa4e96ea28a785dfd66083ca55eb1058b6d6c5413f01656ca965ee2077e
+numpy==1.26.4
+ffmpeg-python>=0.2.0
+pydub
+noisereduce

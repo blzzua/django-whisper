@@ -11,6 +11,7 @@
     
     <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10/dist/ext/response-targets.js"></script>
     
     <style>
         .upload-area {
@@ -38,7 +39,7 @@
         }
         
         .file-info {
-            background: #e3f2fd;
+            background: #43b02a;
             border-radius: 8px;
             padding: 1rem;
             margin-top: 1rem;
@@ -84,6 +85,12 @@
         main {
             flex: 1;
         }
+
+        :root {
+            --bs-primary: #43b02a;
+            --bs-primary-rgb: 67, 176, 42;
+            }
+
     </style>
 </head>
 <body>
@@ -284,6 +291,24 @@
             });
         });
     </script>
+    <script>
+    function handleUploadResult(event) {
+        // Отримуємо відповідь у вигляді JSON-об'єкта з події
+        const response = event.detail.xhr.response;
+        const data = JSON.parse(response);
+
+        // Перевіряємо значення 'success'
+        if (data.success) {
+            // Якщо success: true, відображаємо повідомлення і перенаправляємо
+            alert(data.message);
+            window.location.href = data.redirect;
+        } else {
+            // Якщо success: false, просто відображаємо повідомлення
+            alert(data.message);
+        }
+    }
+    </script>
+
     
     {% block extra_js %}{% endblock %}
 </body>

@@ -24,7 +24,7 @@
                                 <i class="bi bi-{% if file.file_type == 'video' %}camera-video{% else %}music-note{% endif %} me-2 text-primary"></i>
                                 <div>
                                     <strong>{{ file.original_filename|truncatechars:30 }}</strong>
-                                    <br><small class="text-muted">{{ file.file.size|filesizeformat }}</small>
+                                    <br><small class="text-muted">{{ file.original_filesize|filesizeformat }}</small>
                                 </div>
                             </div>
                         </td>
@@ -72,6 +72,7 @@
                                 <button class="btn btn-sm btn-outline-secondary"
                                         hx-post="{% url 'toggle_share' file.id %}"
                                         hx-target="#share-{{ file.id }}"
+                                        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
                                         hx-swap="outerHTML">
                                     <span id="share-{{ file.id }}">
                                         {% if file.is_shared %}

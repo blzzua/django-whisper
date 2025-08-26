@@ -68,27 +68,29 @@
                             {% endif %}
                         </td>
                         <td>
+                            {% if file.is_shared %}
+                                <small class="d-block text-muted">
+                                    <a href="{% url 'shared_transcription' file.shared_url %}" target="_blank">
+                                        Посилання <i class="bi bi-box-arrow-up-right"></i>
+                                    </a>
+                                </small>
+                            {% endif %}
+
                             {% if file.status == 'completed' %}
                                 <button class="btn btn-sm btn-outline-secondary"
                                         hx-post="{% url 'toggle_share' file.id %}"
                                         hx-target="#share-{{ file.id }}"
                                         hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                                        hx-ext="json-swap"
                                         hx-swap="outerHTML">
                                     <span id="share-{{ file.id }}">
                                         {% if file.is_shared %}
-                                            <i class="bi bi-link-45deg"></i> Спільний
+                                            <i class="bi bi-link-45deg"></i>Сховати
                                         {% else %}
                                             <i class="bi bi-share"></i> Поділитися
                                         {% endif %}
                                     </span>
                                 </button>
-                                {% if file.is_shared %}
-                                    <small class="d-block text-muted">
-                                        <a href="{% url 'shared_transcription' file.shared_url %}" target="_blank">
-                                            Посилання <i class="bi bi-box-arrow-up-right"></i>
-                                        </a>
-                                    </small>
-                                {% endif %}
                             {% else %}
                                 <span class="text-muted">—</span>
                             {% endif %}
@@ -110,6 +112,16 @@
                                         <span class="visually-hidden">Обробка...</span>
                                     </div>
                                 </button>
+                                <a href="{% url 'transcription_detail' file.id %}"
+                                   class="btn btn-sm btn-primary"
+                                   hx-get="{% url 'transcription_detail' file.id %}"
+                                   hx-target="#modal-content"
+                                   hx-trigger="click"
+                                   data-bs-toggle="modal"
+                                   data-bs-target="#transcriptionModal">
+                                    <i class="bi bi-eye"></i> Переглянути
+                                </a>
+
                             {% else %}
                                 <span class="text-muted">—</span>
                             {% endif %}

@@ -28,7 +28,9 @@ class MediaFile(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     recognized_text = models.TextField(null=True, blank=True)
     file_type = models.CharField(max_length=10, choices=FILE_TYPE_CHOICES)
+    need_split_audio = models.BooleanField(default=False,null=False)
     is_shared = models.BooleanField(default=False)
+    is_example = models.BooleanField(default=False)
     shared_url = models.CharField(max_length=10, unique=True, null=True, blank=True)
     
     # Додаткові опції обробки

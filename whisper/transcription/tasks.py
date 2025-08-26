@@ -1,17 +1,4 @@
-#import whisper # not work
 import logging
-
-import whisper as whisper_ai
-MODEL_NAME = "base"
-try:
-    print(f'{whisper_ai.__path__=}')
-    logging.error(f"Завантаження моделі Whisper: {MODEL_NAME}...")
-    model = whisper_ai.load_model(MODEL_NAME)
-    logging.info("Модель успішно завантажена.")
-except Exception as e:
-    logging.error(f"Не вдалося завантажити модель Whisper: {e}")
-    model = None
-
 import time
 import random
 from celery import shared_task
@@ -25,8 +12,29 @@ import numpy as np
 from pydub import AudioSegment, silence
 import noisereduce as nr
 
-# --- Основна логіка ---
 
+# --- lazy load whisper model ---
+_whisper_model_cache = None
+MODEL_NAME = "base"
+
+def get_whisper_model():
+    """
+    lazy load and cache model Whisper.
+    """
+    global _whisper_model_cache
+    if _whisper_model_cache is None:
+        try:
+            import whisper
+            logging.info(f"Завантаження моделі Whisper: {MODEL_NAME}...")
+            _whisper_model_cache = whisper.load_model(MODEL_NAME)
+            logging.info("Модель успішно завантажена.")
+        except Exception as e:
+            logging.error(f"Не вдалося завантажити модель Whisper: {e}")
+            _whisper_model_cache = None
+            raise RuntimeError(f"Не вдалося завантажити модель Whisper: {e}")
+    return _whisper_model_cache
+
+# --- Основна логіка ---
 def process_input_file(filepath):
     """
     Обробляє вхідний файл (аудіо або відео).
@@ -106,6 +114,7 @@ def transcribe_generator(path_to_wav, need_reduce_noise=True, need_split_audio=T
         return
 
     try:
+        model = get_whisper_model()
         if model is None:
             logging.error("Модель Whisper не завантажена. Неможливо виконати транскрипцію.")
             return
@@ -181,8 +190,7 @@ def transcribe_generator(path_to_wav, need_reduce_noise=True, need_split_audio=T
 
 @shared_task
 def process_media_file_task(media_file_id):
-    #try:
-    for i in range(1):
+    try:
         media_file = MediaFile.objects.get(id=media_file_id)
         
         # Оновлюємо статус на "в обробці"
@@ -195,7 +203,7 @@ def process_media_file_task(media_file_id):
         for text_chunk in transcribe_generator(
             path_to_wav=media_file.file.path,
             need_reduce_noise=False,
-            need_split_audio=True,
+            need_split_audio=False, # TODO get this field from model
             choosed_language="auto"
         ):
             full_transcribed_text += text_chunk
@@ -212,17 +220,17 @@ def process_media_file_task(media_file_id):
         
         return f"Обробка файлу {media_file.original_filename} завершена успішно"
         
-    #except MediaFile.DoesNotExist:
-    #    return f"Файл з ID {media_file_id} не знайдено"
-    #except Exception as e:
-    #    # У випадку помилки
-    #    try:
-    #        media_file = MediaFile.objects.get(id=media_file_id)
-    #        media_file.status = 'failed'
-    #        media_file.save()
-    #    except:
-    #        pass
-    #    return f"Помилка обробки: {str(e)}"
+    except MediaFile.DoesNotExist:
+        return f"Файл з ID {media_file_id} не знайдено"
+    except Exception as e:
+        # У випадку помилки
+        try:
+            media_file = MediaFile.objects.get(id=media_file_id)
+            media_file.status = 'failed'
+            media_file.save()
+        except:
+            pass
+        return f"Помилка обробки: {str(e)}"
 
 
 

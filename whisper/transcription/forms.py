@@ -5,7 +5,7 @@ from .models import MediaFile
 class MediaFileUploadForm(forms.ModelForm):
     class Meta:
         model = MediaFile
-        fields = ['file', 'noise_cancellation', 'language', 'diarisation']
+        fields = ['file', 'noise_cancellation', 'language', 'diarisation','need_split_audio']
         widgets = {
             'file': forms.FileInput(attrs={
                 'accept': '.mp3,.wav,.ogg,.aac,.flac,.m4a,.mp4,.avi,.mov,.wmv,.flv,.webm',
@@ -21,12 +21,16 @@ class MediaFileUploadForm(forms.ModelForm):
             'diarisation': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
             }),
+            'need_split_audio': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
         }
         labels = {
             'file': 'Оберіть файл',
             'noise_cancellation': 'Зменшення шуму',
             'language': 'Мова',
             'diarisation': 'Розділення мовців',
+            'need_split_audio': 'Розпізнавання частинами',
         }
     
     language = forms.ChoiceField(
